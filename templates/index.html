@@ -1,87 +1,91 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Resume Analyzer AI</title>
+<title>Resume Analyzer</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body {
-    font-family: Arial;
-    background: linear-gradient(135deg,#667eea,#764ba2);
-    color:white;
-    text-align:center;
-}
-
-.container { margin-top:50px; }
-
-input {
-    padding:10px;
-    margin:10px;
-}
-
-button {
-    padding:10px 20px;
-    border:none;
-    background:#667eea;
-    color:white;
-    cursor:pointer;
-}
-
-.results {
-    background:white;
-    color:black;
-    margin-top:20px;
-    padding:20px;
-    border-radius:10px;
-    display:none;
-}
+body {background:#667eea;color:white;text-align:center;}
+.drop-zone {border:2px dashed white;padding:30px;margin:20px;cursor:pointer;}
+.results {background:white;color:black;padding:20px;display:none;}
+.skill-bar {background:#ddd;}
+.skill-fill {background:green;color:white;}
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<h1>Resume Analyzer</h1>
 
-<h1>Resume Analyzer AI</h1>
-
-<input type="file" id="fileInput">
-<br>
-<button onclick="uploadResume()">Analyze Resume</button>
-
-<div class="results" id="results">
-    <h2>ATS Score: <span id="score"></span></h2>
-    <pre id="aiResult"></pre>
+<div class="drop-zone" id="dropZone">
+Drag & Drop or Click
+<input type="file" id="fileInput" hidden>
 </div>
 
+<button onclick="uploadResume()">Analyze</button>
+
+<div class="results" id="results">
+<h2>Score: <span id="score"></span></h2>
+
+<ul id="roles"></ul>
+<div id="skills"></div>
+<canvas id="chart"></canvas>
+<pre id="ai"></pre>
 </div>
 
 <script>
-async function uploadResume() {
-    const fileInput = document.getElementById("fileInput");
+let file=null;
+const dropZone=document.getElementById("dropZone");
+const fileInput=document.getElementById("fileInput");
 
-    if (!fileInput.files[0]) {
-        alert("Please upload a file");
-        return;
-    }
+dropZone.onclick=()=>fileInput.click();
 
-    const formData = new FormData();
-    formData.append("resume", fileInput.files[0]);
+fileInput.onchange=()=>{
+file=fileInput.files[0];
+dropZone.innerText=file.name;
+};
 
-    const res = await fetch("/analyze", {
-        method: "POST",
-        body: formData
-    });
+dropZone.ondrop=e=>{
+e.preventDefault();
+file=e.dataTransfer.files[0];
+dropZone.innerText=file.name;
+};
 
-    const data = await res.json();
+dropZone.ondragover=e=>e.preventDefault();
 
-    if (data.success) {
-        document.getElementById("results").style.display = "block";
-        document.getElementById("score").innerText = data.score;
-        document.getElementById("aiResult").innerText = data.ai_analysis;
-    } else {
-        alert(data.error);
-    }
+async function uploadResume(){
+if(!file){alert("Upload file");return;}
+
+const formData=new FormData();
+formData.append("resume",file);
+
+const res=await fetch("/analyze",{method:"POST",body:formData});
+const data=await res.json();
+
+if(!data.success){alert(data.error);return;}
+
+document.getElementById("results").style.display="block";
+document.getElementById("score").innerText=data.score;
+
+document.getElementById("roles").innerHTML=data.roles.map(r=>`<li>${r}</li>`).join("");
+
+let labels=[],values=[];
+let skillsHTML="";
+
+data.skills.forEach(s=>{
+labels.push(s.name);
+values.push(s.percent);
+skillsHTML+=`${s.name} (${s.level}) <div class="skill-bar"><div class="skill-fill" style="width:${s.percent}%">${s.percent}%</div></div>`;
+});
+
+document.getElementById("skills").innerHTML=skillsHTML;
+
+new Chart(document.getElementById("chart"),{
+type:"pie",
+data:{labels:labels,datasets:[{data:values}]}
+});
+
+document.getElementById("ai").innerText=data.ai_feedback;
 }
 </script>
 

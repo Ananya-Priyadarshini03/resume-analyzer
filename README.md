@@ -10,6 +10,10 @@ An intelligent web application that analyzes resumes using NLP and AI to provide
 
 
 
+---
+
+
+
 <img width="1600" height="842" alt="WhatsApp Image 2026-10-30 at 10 28 53 PM" src="https://github.com/user-attachments/assets/1cd824cf-020a-4f21-9848-6fc48d0758e8" />
 
 
